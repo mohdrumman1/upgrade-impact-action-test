@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: mohdrumman1/upgrade-impact@v1-beta.2
+      - uses: mohdrumman1/upgrade-impact@v1-beta.3
         with:
           github-token: ${{ github.token }}
+          hosted-endpoint: ${{ vars.UPGRADE_IMPACT_BETA_ENDPOINT }}
+          license-key: ${{ secrets.UPGRADE_IMPACT_BETA_TOKEN }}
