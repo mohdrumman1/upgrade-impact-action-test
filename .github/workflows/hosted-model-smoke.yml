@@ -1,0 +1,58 @@
+name: Hosted model smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run bounded graph-verified analysis
+        env:
+          ENDPOINT: ${{ vars.UPGRADE_IMPACT_BETA_ENDPOINT }}
+          LICENSE_KEY: ${{ secrets.UPGRADE_IMPACT_BETA_TOKEN }}
+          REQUEST_ID: hosted-smoke-${{ github.run_id }}
+        run: |
+          test -n "$ENDPOINT"
+          test -n "$LICENSE_KEY"
+          cat > request.json <<'JSON'
+          {
+            "version": 1,
+            "requestId": "placeholder",
+            "analysisInput": {
+              "repository": "owner/private-repo",
+              "pullRequest": 7,
+              "baseSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "dependencies": [{
+                "dependency": {"name":"tool","section":"devDependencies","before":"1.0.0","after":"2.0.0","kind":"upgraded","versionDelta":"major"},
+                "releaseFacts": [{"id":"release-1","dependency":"tool","kind":"cli-flag","concept":"--legacy","relationship":"breaking","statement":"The --legacy flag was removed.","releaseUrl":"https://github.com/example/tool/releases/tag/v2.0.0"}],
+                "repositoryUsages": [{"id":"usage-1","dependency":"tool","kind":"cli-flag","concept":"--legacy","path":"package.json","startLine":5,"endLine":5,"content":"tool --legacy"}],
+                "edges": [{"id":"edge-1","dependency":"tool","kind":"cli-flag","concept":"--legacy","releaseFactId":"release-1","repositoryUsageId":"usage-1","rule":"exact-concept"}],
+                "unmatchedReleaseFacts": [],
+                "evidenceGap": null
+              }]
+            },
+            "graph": {
+              "version": 2,
+              "repository": "owner/private-repo",
+              "pullRequest": 7,
+              "baseSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "dependencies": [{
+                "dependency": {"name":"tool","section":"devDependencies","before":"1.0.0","after":"2.0.0","kind":"upgraded","versionDelta":"major"},
+                "releaseFacts": [{"id":"release-1","dependency":"tool","kind":"cli-flag","concept":"--legacy","relationship":"breaking","statement":"The --legacy flag was removed.","releaseUrl":"https://github.com/example/tool/releases/tag/v2.0.0"}],
+                "repositoryUsages": [{"id":"usage-1","dependency":"tool","kind":"cli-flag","concept":"--legacy","path":"package.json","startLine":5,"endLine":5,"content":"tool --legacy"}],
+                "edges": [{"id":"edge-1","dependency":"tool","kind":"cli-flag","concept":"--legacy","releaseFactId":"release-1","repositoryUsageId":"usage-1","rule":"exact-concept"}],
+                "unmatchedReleaseFactIds": []
+              }]
+            }
+          }
+          JSON
+          jq --arg id "$REQUEST_ID" '.requestId = $id' request.json > request-with-id.json
+          status=$(curl --silent --show-error --max-time 150 --output response.json --write-out "%{http_code}" --request POST --header "authorization: Bearer $LICENSE_KEY" --header "content-type: application/json" --data @request-with-id.json "$ENDPOINT/v1/analyse")
+          test "$status" = "200"
+          jq -e '.version == 1 and (.analysis.findings | length) > 0 and .metadata.spendUsd <= 0.02' response.json >/dev/null
+          jq '{model: .metadata.model, spendUsd: .metadata.spendUsd, attempts: .metadata.attempts, usage: .metadata.usage}' response.json
