@@ -1,0 +1,22 @@
+name: UpgradeImpact hosted test
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/cache@v4
+        with:
+          path: .upgrade-impact
+          key: upgrade-impact-${{ github.repository_id }}-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+      - uses: mohdrumman1/upgrade-impact@v1-beta
+        with:
+          github-token: ${{ github.token }}
