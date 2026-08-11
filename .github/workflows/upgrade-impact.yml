@@ -20,7 +20,7 @@ jobs:
         run: |
           status=$(curl --silent --show-error --max-time 15 --output response.json --write-out "%{http_code}" --request POST --header "authorization: Bearer $LICENSE_KEY" --header "content-type: application/json" --data "{}" "$ENDPOINT/v1/analyse")
           test "$status" = "400"
-          jq -e .error.code == "invalid_request" response.json
+          test "$(jq -r .error.code response.json)" = "invalid_request"
       - uses: mohdrumman1/upgrade-impact@v1-beta.4
         with:
           github-token: ${{ github.token }}
