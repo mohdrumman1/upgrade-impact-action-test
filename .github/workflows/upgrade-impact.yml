@@ -17,6 +17,6 @@ jobs:
         with:
           path: .upgrade-impact
           key: upgrade-impact-${{ github.repository_id }}-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
-      - uses: mohdrumman1/upgrade-impact@v1-beta
+      - uses: mohdrumman1/upgrade-impact@v1-beta.1
         with:
           github-token: ${{ github.token }}
