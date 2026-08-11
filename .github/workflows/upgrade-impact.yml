@@ -13,7 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: mohdrumman1/upgrade-impact@v1-beta.3
+      - name: Verify hosted credential boundary
+        env:
+          ENDPOINT: ${{ vars.UPGRADE_IMPACT_BETA_ENDPOINT }}
+          LICENSE_KEY: ${{ secrets.UPGRADE_IMPACT_BETA_TOKEN }}
+        run: |
+          status=$(curl --silent --show-error --max-time 15 --output response.json --write-out "%{http_code}" --request POST --header "authorization: Bearer $LICENSE_KEY" --header "content-type: application/json" --data "{}" "$ENDPOINT/v1/analyse")
+          test "$status" = "400"
+          jq -e .error.code == "invalid_request" response.json
+      - uses: mohdrumman1/upgrade-impact@v1-beta.4
         with:
           github-token: ${{ github.token }}
           hosted-endpoint: ${{ vars.UPGRADE_IMPACT_BETA_ENDPOINT }}
