@@ -1,0 +1,10 @@
+{
+  "name": "upgrade-impact-action-test",
+  "private": true,
+  "scripts": {
+    "build": "ncc build index.js"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "0.38.3"
+  }
+}
